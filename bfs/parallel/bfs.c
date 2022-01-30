@@ -32,16 +32,19 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
     }
 
     // int numOfLevels = (int) log2(endNodeIndex);
-    int numOfLevels = 30;
+    int numOfLevels = (endNode->value+1) / 10;
     struct Queue** levels = (struct Queue**) malloc(numOfLevels * sizeof(struct Queue*));
     for(int i = 0; i < numOfLevels; i++){
         levels[i] = malloc(sizeof(struct Queue*));
+        levels[i] = createQueue();
     }
 
-    omp_lock_t level_locks[numOfLevels];  
+    omp_lock_t** level_locks = (omp_lock_t**) malloc(numOfLevels * sizeof(omp_lock_t*));
+
     #pragma omp parallel for  
     for(int i = 0; i < numOfLevels; i++){
-        omp_init_lock(&level_locks[i]);
+        level_locks[i] = malloc(sizeof(omp_lock_t*));
+        omp_init_lock(level_locks[i]);
     }
 
     int currentLevel = 0;
@@ -51,7 +54,10 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
     initialState->cost = 0;
     initialState->parent = NULL;
 
-    push_back(levels[currentLevel], initialState);
+    // struct Queue* queue = createQueue();
+
+    push_back(levels[0], initialState);
+    // push_back(queue, initialState);
     visited[startNodeIndex] = true;
 
     struct Queue* path;
@@ -65,7 +71,13 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
             #pragma omp critical
             {
                 currentState = pop_front(levels[currentLevel]);
+                push_back(visitedQueue, currentState);
             }
+
+            // int sum = 0;
+            // for(int i = 0; i < 50000000; i++){
+            //     sum++;
+            // }
 
             if(currentState->node->value == endNodeIndex){
                 #pragma omp critical
@@ -90,9 +102,11 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
                                 nextState->cost = 0;
                                 nextState->parent = currentState;
 
-                                omp_set_lock(&level_locks[currentLevel+1]);
+                                #pragma omp critical
+                                // push_back(queue, nextState);
+                                omp_set_lock(level_locks[currentLevel+1]);
                                     push_back(levels[currentLevel+1], nextState);
-                                omp_unset_lock(&level_locks[currentLevel+1]);
+                                omp_unset_lock(level_locks[currentLevel+1]);
 
                                 visited[edge->dest] = true;
                             }                            
@@ -101,10 +115,22 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
                         edge = edge->next;
                     }
                 }
+                #pragma omp barrier
             }
+
         }
 
         currentLevel++;
+        if(currentLevel >= numOfLevels - 1){
+            levels = realloc(levels, (numOfLevels+1)*sizeof(struct Queue*));
+            level_locks = realloc(level_locks, (numOfLevels+1)*sizeof(struct omp_lock_t*));
+
+            levels[numOfLevels] = malloc(sizeof(struct Queue*));
+            levels[numOfLevels] = createQueue();
+            level_locks[numOfLevels] = malloc(sizeof(omp_lock_t*));
+            omp_init_lock(level_locks[numOfLevels]);
+            numOfLevels++;
+        }
     }
 
     if(cancel) 
@@ -118,12 +144,13 @@ int main(){
     struct Queue* visitedQueue = createQueue();
 
     double start = omp_get_wtime();
-    struct Queue* path = bfs(graph, visitedQueue, 0, 99);
+    struct Queue* path = bfs(graph, visitedQueue, 0, 999);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
+    // print_queue(visitedQueue);
     printCells(path, visitedQueue);
 
     if(path == NULL)

@@ -5,8 +5,8 @@
 
 #include "generator.h"
 
-#define ROWS 1000
-#define COLS 1000
+#define ROWS 30
+#define COLS 30
 
 struct Cell** cells;
 
@@ -60,8 +60,8 @@ void printCells(struct Queue* queue, struct Queue* visitedQueue){
                 printf("- ");
             else if(checkIfInQueue(queue, i * COLS + j))
                 printf("* ");       
-            else if(checkIfInQueue(visitedQueue, i * COLS + j))
-                printf(". ");    
+            // else if(checkIfInQueue(visitedQueue, i * COLS + j))
+            //     printf(". ");    
             else
                 printf("  ");
 

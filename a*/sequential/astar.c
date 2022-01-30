@@ -8,8 +8,6 @@
 #include "queue.c"
 #include "generator.c"
 
-#define NUM_OF_NODES 10
-
 struct Queue* reconstructPath(struct State* bestState){
     struct Queue* path = createQueue();
     while(bestState->parent != NULL) {
@@ -95,13 +93,13 @@ int main(){
     struct Queue* visitedQueue = createQueue();
 
     double start = omp_get_wtime();
-    struct Queue* path = aStar(graph, visitedQueue, 0, 6249999);
+    struct Queue* path = aStar(graph, visitedQueue, 0, 99);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
-    // printCells(path, visitedQueue);
+    printCells(path, visitedQueue);
 
     if(path == NULL)
         printf("No path!\n");

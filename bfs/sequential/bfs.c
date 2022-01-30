@@ -41,6 +41,11 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
         struct State* currentState = pop_front(queue);
         push_back(visitedQueue, currentState);
 
+        // int sum = 0;
+        // for(int i = 0; i < 50000000; i++){
+        //     sum++;
+        // }
+
         if(currentState->node->value == endNode->value){
             return reconstructPath(currentState);
         }
@@ -77,7 +82,7 @@ int main(){
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
-    printCells(path, visitedQueue);
+    // printCells(path, visitedQueue);
 
     if(path == NULL)
         printf("No path!\n");

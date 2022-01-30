@@ -60,8 +60,8 @@ void printCells(struct Queue* queue, struct Queue* visitedQueue){
                 printf("- ");
             else if(checkIfInQueue(queue, i * COLS + j))
                 printf("* ");
-            else if(checkIfInQueue(visitedQueue, i * COLS + j))
-                printf(". ");
+            // else if(checkIfInQueue(visitedQueue, i * COLS + j))
+            //     printf(". ");
             else
                 printf("  ");
 
@@ -86,7 +86,10 @@ struct Graph* generateGraph(){
             struct Cell* cell = (struct Cell*) malloc(sizeof(struct Cell)); 
             cell->i = i;
             cell->j = j;
-            cell->special = false;
+            if((i == 2 && j < 5) || ((i == 5) && (j > 3)))
+                cell->special = true;
+            else
+                cell->special = false;
             
             cells[i * COLS + j] = cell;
         }

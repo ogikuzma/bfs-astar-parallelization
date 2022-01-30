@@ -5,8 +5,8 @@
 
 #include "generator.h"
 
-#define ROWS 10
-#define COLS 10
+#define ROWS 30
+#define COLS 30
 
 struct Cell** cells;
 
@@ -86,7 +86,7 @@ struct Graph* generateGraph(){
             struct Cell* cell = (struct Cell*) malloc(sizeof(struct Cell)); 
             cell->i = i;
             cell->j = j;
-            if((i == 2 && j < 7) || ((i == 5 || i == 7) && (j > 0)))
+            if((i == 2 && j < 5) || ((i == 5) && (j > 3)))
                 cell->special = true;
             else
                 cell->special = false;

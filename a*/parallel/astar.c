@@ -22,29 +22,34 @@ struct Queue* reconstructPath(struct State* bestState){
 struct State* getBestState(struct Queue* queue){
     struct QueueNode* ptr = queue->head;
 
-    struct QueueNode* ptrs[queue->size];
-    #pragma omp parellel for
-    for(int i = 0; i < queue->size; i++){
-        ptrs[i] = ptr;
-        ptr = ptr->next;
-    }
+    struct State* bestState = ptr->state;
+    float min = bestState->cost + bestState->node->heuristic;
 
-    int minIndex = 0;
-
-    #pragma omp parallel for
-    for(int i = 0; i < queue->size; i++){
-        float min = ptrs[minIndex]->state->cost + ptrs[minIndex]->state->node->heuristic;
-        float potentialMin = ptrs[i]->state->cost + ptrs[i]->state->node->heuristic;
-
-        #pragma omp critical
+    #pragma omp parallel
+    {
+        #pragma omp single
         {
-            if(potentialMin < min){
-                minIndex = i;
+            while(ptr != NULL){
+                #pragma omp task
+                {
+                    struct State* currentState = ptr->state;
+                    float potentialMin = currentState->cost + currentState->node->heuristic;
+
+                    #pragma omp critical
+                    {
+                        if (min > potentialMin){
+                            min = potentialMin;
+                            bestState = currentState;
+                        }
+                    }
+                }
+                
+                ptr = ptr->next;
             }
         }
     }
 
-    return ptrs[minIndex]->state;
+    return bestState;
 }
 
 struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNodeValue, int endNodeValue){
@@ -59,6 +64,7 @@ struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNo
     initialState->parent = NULL;
 
     bool visited[graph->numOfNodes];
+    #pragma omp parallel for
     for(int i = 0; i < graph->numOfNodes; i++){
         visited[i] = false;
     } 
@@ -112,13 +118,13 @@ int main(){
     struct Queue* visitedQueue = createQueue();
 
     double start = omp_get_wtime();
-    struct Queue* path = aStar(graph, visitedQueue, 0, 999999);
+    struct Queue* path = aStar(graph, visitedQueue, 0, 899);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
-    // printCells(path, visitedQueue);
+    printCells(path, visitedQueue);
 
     if(path == NULL)
         printf("No path!\n");
