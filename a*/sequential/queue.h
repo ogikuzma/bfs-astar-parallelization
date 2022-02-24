@@ -8,8 +8,8 @@ struct QueueNode {
   struct QueueNode *next;
 };
 
-void push_back(struct Queue *queue, struct State* state);
-void pop(struct Queue *queue, struct State* state);
+void push(struct Queue *queue, struct State* state);
+struct State* pop(struct Queue *queue);
 void print_queue(struct Queue *queue);
 int isEmpty(struct Queue *queue);
 struct Queue* createQueue();

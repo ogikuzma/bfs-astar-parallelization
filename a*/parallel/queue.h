@@ -9,7 +9,7 @@ struct QueueNode {
 };
 
 void push_back(struct Queue *queue, struct State* state);
-void pop(struct Queue *queue, struct State* state);
+struct State* pop_front(struct Queue *queue);
 void print_queue(struct Queue *queue);
 int isEmpty(struct Queue *queue);
 struct Queue* createQueue();

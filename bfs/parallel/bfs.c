@@ -31,64 +31,62 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
         visited[i] = false;
     }
 
-    int currentLevel = 0;
-
     struct State* initialState = (struct State*) malloc(sizeof(struct State));
     initialState->node = startNode;
     initialState->cost = 0;
     initialState->parent = NULL;
 
-    struct Queue* queue = createQueue();
+    struct Queue* currentLevel = createQueue();
 
-    push_back(queue, initialState);
+    push_back(currentLevel, initialState);
     visited[startNodeIndex] = true;
 
     struct Queue* path;
     bool cancel = false;
 
-    while(!isEmpty(queue) && !cancel){
+    while(!isEmpty(currentLevel) && !cancel){
+        
+        struct Queue* nextLevel = createQueue();
 
-        struct State* currentState;
-        currentState = pop_front(queue);
-        push_back(visitedQueue, currentState);
+        #pragma omp parallel for
+        for(int i = 0; i < currentLevel->size; i++){
 
-        // int sum = 0;
-        // for(int i = 0; i < 50000000; i++){
-        //     sum++;
-        // }
+            struct State* currentState;
+            #pragma omp critical
+            currentState = pop_front(currentLevel);
+            push_back(visitedQueue, currentState);
 
-        if(currentState->node->value == endNodeIndex){
-            path = reconstructPath(currentState);
-            cancel = true;
-        }
+            // int sum = 0;
+            // for(int i = 0; i < 50000000; i++){
+            //     sum++;
+            // }
 
-        struct Edge* edge = currentState->node->nextEdge;
-        #pragma omp parallel
-        {
-            #pragma omp single
-            {
-                while (edge != NULL)
-                {
-                    #pragma omp task
-                    {
-                        if(!visited[edge->dest]){
-                            struct State* nextState = (struct State*) malloc(sizeof(struct State));
-                            nextState->node = graph->head[edge->dest];
-                            nextState->cost = 0;
-                            nextState->parent = currentState;
-
-                            #pragma omp critical
-                            push_back(queue, nextState);
-
-                            visited[edge->dest] = true;
-                        }                            
-                    }
-                    
-                    edge = edge->next;
-                }
+            if(currentState->node->value == endNodeIndex){
+                path = reconstructPath(currentState);
+                cancel = true;
             }
-            #pragma omp barrier
+
+            struct Edge* edge = currentState->node->nextEdge;
+            
+            while (edge != NULL){
+                if(!visited[edge->dest]){
+                    struct State* nextState = (struct State*) malloc(sizeof(struct State));
+                    nextState->node = graph->head[edge->dest];
+                    nextState->cost = 0;
+                    nextState->parent = currentState;
+
+                    #pragma omp critical
+                    push_back(nextLevel, nextState);
+
+                    visited[edge->dest] = true;
+                }                          
+
+                edge = edge->next;                    
+            }
         }
+
+        free(currentLevel);
+        currentLevel = nextLevel;
     }
 
     if(cancel) 
@@ -102,7 +100,7 @@ int main(){
     struct Queue* visitedQueue = createQueue();
 
     double start = omp_get_wtime();
-    struct Queue* path = bfs(graph, visitedQueue, 0, 899);
+    struct Queue* path = bfs(graph, visitedQueue, 0, 99);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);

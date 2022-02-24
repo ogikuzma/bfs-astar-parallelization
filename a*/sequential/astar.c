@@ -11,33 +11,12 @@
 struct Queue* reconstructPath(struct State* bestState){
     struct Queue* path = createQueue();
     while(bestState->parent != NULL) {
-        push_back(path, bestState);
+        push(path, bestState);
         bestState = bestState->parent;
     }
-    push_back(path, bestState);
+    push(path, bestState);
 
     return path;
-}
-
-struct State* getBestState(struct Queue* queue){
-    struct QueueNode* ptr = queue->head;
-
-    struct State* bestState = ptr->state;
-    float min = bestState->cost + bestState->node->heuristic;
-
-    while(ptr != NULL){
-        struct State* currentState = ptr->state;
-        float potentialMin = currentState->cost + currentState->node->heuristic;
-
-        if (min > potentialMin){
-            min = potentialMin;
-            bestState = currentState;
-        }
-
-        ptr = ptr->next;
-    }
-
-    return bestState;
 }
 
 struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNodeValue, int endNodeValue){
@@ -56,16 +35,26 @@ struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNo
         visited[i] = false;
     } 
 
-    push_back(queue, initialState);
+    push(queue, initialState);
 
-    while(!isEmpty(queue)){
-        struct State* bestState = getBestState(queue);
-        push_back(visitedQueue, bestState);
-        pop(queue, bestState);
+    bool found = false;
+    struct Queue* path;
+
+    while(!isEmpty(queue) && !found){
+        struct State* bestState = pop(queue);
+
+        // int sum = 0;
+        // for(int i = 0; i < 50000000; i++){
+        //     sum++;
+        // }
+        
+        push(visitedQueue, bestState);
+
         struct Node* currentNode = bestState->node;
 
         if(currentNode == endNode){
-            return reconstructPath(bestState);
+            path = reconstructPath(bestState);
+            found = true;
         }
 
         if(visited[bestState->node->value])
@@ -80,10 +69,13 @@ struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNo
             possibleState->cost = bestState->cost + edge->cost;
             possibleState->parent = bestState;
 
-            push_back(queue, possibleState);
+            push(queue, possibleState);
             edge = edge->next;
         } 
     }
+
+    if(!found) return NULL;
+    else return path;
 
     return NULL;
 }
@@ -93,13 +85,13 @@ int main(){
     struct Queue* visitedQueue = createQueue();
 
     double start = omp_get_wtime();
-    struct Queue* path = aStar(graph, visitedQueue, 0, 99);
+    struct Queue* path = aStar(graph, visitedQueue, 0, 249999);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
-    printCells(path, visitedQueue);
+    // printCells(path, visitedQueue);
 
     if(path == NULL)
         printf("No path!\n");

@@ -50,20 +50,19 @@ struct Queue* bfs(struct Graph* graph, struct Queue* visitedQueue, int startNode
             return reconstructPath(currentState);
         }
 
-        if(visited[currentState->node->value])
-            continue;
-        else
-            visited[currentState->node->value] = true;
-
         struct Edge* edge = currentState->node->nextEdge;
         while (edge != NULL)
         {                
-            struct State* nextState = (struct State*) malloc(sizeof(struct State));
-            nextState->node = graph->head[edge->dest];
-            nextState->cost = 0;
-            nextState->parent = currentState;
+            if(!visited[edge->dest]){
+                struct State* nextState = (struct State*) malloc(sizeof(struct State));
+                nextState->node = graph->head[edge->dest];
+                nextState->cost = 0;
+                nextState->parent = currentState;
 
-            push_back(queue, nextState);
+                push_back(queue, nextState);
+                visited[edge->dest] = true;
+            }
+            
             edge = edge->next;
         }
     }
@@ -82,7 +81,7 @@ int main(){
     printf("Time elapsed: %.2lfs\n", end - start);
     // printGraph(graph);
     // print_queue(path);
-    // printCells(path, visitedQueue);
+    printCells(path, visitedQueue);
 
     if(path == NULL)
         printf("No path!\n");

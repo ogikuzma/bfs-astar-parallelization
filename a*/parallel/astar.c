@@ -19,39 +19,6 @@ struct Queue* reconstructPath(struct State* bestState){
     return path;
 }
 
-struct State* getBestState(struct Queue* queue){
-    struct QueueNode* ptr = queue->head;
-
-    struct State* bestState = ptr->state;
-    float min = bestState->cost + bestState->node->heuristic;
-
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            while(ptr != NULL){
-                #pragma omp task
-                {
-                    struct State* currentState = ptr->state;
-                    float potentialMin = currentState->cost + currentState->node->heuristic;
-
-                    #pragma omp critical
-                    {
-                        if (min > potentialMin){
-                            min = potentialMin;
-                            bestState = currentState;
-                        }
-                    }
-                }
-                
-                ptr = ptr->next;
-            }
-        }
-    }
-
-    return bestState;
-}
-
 struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNodeValue, int endNodeValue){
     struct Queue *queue = createQueue();
 
@@ -71,14 +38,24 @@ struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNo
 
     push_back(queue, initialState);
 
-    while(!isEmpty(queue)){
-        struct State* bestState = getBestState(queue);
+    bool found = false;
+    struct Queue* path;
+
+    while(!isEmpty(queue) && !found){
+        struct State* bestState = pop_front(queue);
+
+        // int sum = 0;
+        // for(int i = 0; i < 50000000; i++){
+        //     sum++;
+        // }
+        
         push_back(visitedQueue, bestState);
-        pop(queue, bestState);
+        
         struct Node* currentNode = bestState->node;
 
         if(currentNode == endNode){
-            return reconstructPath(bestState);
+            path = reconstructPath(bestState);
+            found = true;
         }
 
         if(visited[bestState->node->value])
@@ -92,37 +69,40 @@ struct Queue* aStar(struct Graph* graph, struct Queue* visitedQueue, int startNo
             #pragma omp single
             {
                 while(edge != NULL){
-                    struct State* possibleState;
-                    #pragma omp task private(possibleState)
+                    #pragma omp task shared(queue)
                     {
-                        possibleState = (struct State*) malloc(sizeof(struct State));
+                        struct State* possibleState = (struct State*) malloc(sizeof(struct State));
                         possibleState->node = graph->head[edge->dest];
                         possibleState->cost = bestState->cost + edge->cost;
                         possibleState->parent = bestState;
 
                         #pragma omp critical
-                        push_back(queue, possibleState);
+                        {
+                            push_back(queue, possibleState);
+                        }
                     }
 
                     edge = edge->next;
                 } 
             }
+            #pragma omp barrier
         }        
     }
 
-    return NULL;
+    if(!found) return NULL;
+    else return path;
 }
 
 int main(){
     struct Graph* graph = generateGraph();
     struct Queue* visitedQueue = createQueue();
+    // printGraph(graph);
 
     double start = omp_get_wtime();
-    struct Queue* path = aStar(graph, visitedQueue, 0, 899);
+    struct Queue* path = aStar(graph, visitedQueue, 0, 99);
     double end = omp_get_wtime();
 
     printf("Time elapsed: %.2lfs\n", end - start);
-    // printGraph(graph);
     // print_queue(path);
     printCells(path, visitedQueue);
 

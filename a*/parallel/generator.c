@@ -5,8 +5,8 @@
 
 #include "generator.h"
 
-#define ROWS 30
-#define COLS 30
+#define ROWS 10
+#define COLS 10
 
 struct Cell** cells;
 

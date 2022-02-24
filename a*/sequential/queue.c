@@ -2,48 +2,61 @@
 #include <stdlib.h>
 #include "queue.h"
 
-void push_back(struct Queue *queue, struct State* state) {
+void push(struct Queue *queue, struct State* state) {
     struct QueueNode *newNode = malloc(sizeof(struct QueueNode));
     if (!newNode) return;
 
     newNode->state = state; 
-    newNode->next = queue->head;
 
-    queue->head = newNode;
-    queue->size++;
-}
-
-void pop(struct Queue *queue, struct State* state) {
-    struct QueueNode *current = queue->head;
-    struct QueueNode *prev = NULL;
-
-    if(current->next == NULL){
-        if(current->state == state){
-            queue->head = NULL;
-            free(current);
-
-            queue->size--;
-            return;
-        }
-
+    if(queue->head == NULL){
+        newNode->next = NULL; 
+        queue->head = newNode;
+        queue->size++;
         return;
     }
 
+    struct QueueNode* current = queue->head;
+    struct QueueNode* prev = NULL;
+    bool inserted = false;
     while(current != NULL){
-        if(current->state == state){
-            if(prev == NULL)
-                queue->head = current->next;
-            else
-                prev->next = current->next;
-                
-            free(current);
+        float fNew = state->cost + state->node->heuristic;
+        float f = current->state->cost + current->state->node->heuristic;
+        if(f >= fNew){
+            if(prev == NULL){
+                newNode->next = current;
+                queue->head = newNode;
+            }else{
+                prev->next = newNode;
+                newNode->next = current;
+            }
 
-            queue->size--;
-            return;
+            inserted = true;
+            break;
         }
         prev = current;
         current = current->next;
     }
+
+    if(!inserted){
+        newNode->next = NULL;
+        prev->next = newNode;
+    }
+
+    queue->size++;
+}
+
+struct State* pop(struct Queue *queue) {
+    struct QueueNode *current, *prev = NULL;
+    struct State* retval;
+
+    if (queue->head == NULL) return NULL;
+
+    retval = queue->head->state;
+    queue->head = queue->head->next;
+
+    queue->size--;
+
+    return retval;
 }
 
 int checkIfInQueue(struct Queue *queue, int cellIndex){
